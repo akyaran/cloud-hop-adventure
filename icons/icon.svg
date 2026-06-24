@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cloud Hop Adventure icon">
+  <rect width="512" height="512" rx="96" fill="#6ec6ff"/>
+  <circle cx="118" cy="150" r="38" fill="#fff" opacity=".9"/>
+  <circle cx="166" cy="134" r="48" fill="#fff" opacity=".9"/>
+  <circle cx="222" cy="154" r="36" fill="#fff" opacity=".9"/>
+  <path d="M0 374c74-76 151-95 229-58 73-91 166-93 283-8v204H0z" fill="#63c96a"/>
+  <path d="M0 418c82-52 154-61 216-28 84-64 183-56 296 24v98H0z" fill="#3aa85f"/>
+  <rect x="190" y="190" width="134" height="162" rx="48" fill="#ff7a59"/>
+  <rect x="209" y="128" width="96" height="94" rx="38" fill="#ffd6a7"/>
+  <rect x="267" y="166" width="18" height="24" rx="4" fill="#102033"/>
+  <rect x="272" y="170" width="5" height="5" fill="#fff"/>
+  <rect x="210" y="312" width="38" height="56" rx="13" fill="#2e7ad8"/>
+  <rect x="266" y="312" width="38" height="56" rx="13" fill="#2e7ad8"/>
+  <circle cx="362" cy="192" r="34" fill="#ffcf4f" stroke="#b87822" stroke-width="12"/>
+</svg>
