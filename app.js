@@ -16,6 +16,9 @@ const coinsEl = document.getElementById("coins");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 
+const playerSprite = new Image();
+playerSprite.src = "./assets/hero.png";
+
 const WIDTH = 960;
 const HEIGHT = 540;
 const TILE = 48;
@@ -706,6 +709,18 @@ function drawPlayer() {
   const x = player.x - state.cameraX;
   const y = player.y;
   if (player.invuln > 0 && Math.floor(state.time * 18) % 2 === 0) return;
+
+  if (playerSprite.complete && playerSprite.naturalWidth > 0) {
+    const spriteSize = 62;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.translate(x + player.w / 2, y + player.h);
+    ctx.scale(player.facing, 1);
+    ctx.drawImage(playerSprite, -spriteSize / 2, -spriteSize, spriteSize, spriteSize);
+    ctx.restore();
+    return;
+  }
+
   ctx.save();
   ctx.translate(x + player.w / 2, y + player.h / 2);
   ctx.scale(player.facing, 1);
