@@ -1,12 +1,14 @@
 "use strict";
 
-const CACHE_NAME = "cloud-hop-adventure-v3";
+const CACHE_NAME = "cloud-hop-adventure-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./assets/hero.png",
+  "./assets/hero-jump.png",
+  "./assets/moss-shell.png",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/apple-touch-icon.png",

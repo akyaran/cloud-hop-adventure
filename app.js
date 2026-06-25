@@ -18,6 +18,10 @@ const livesEl = document.getElementById("lives");
 
 const playerSprite = new Image();
 playerSprite.src = "./assets/hero.png";
+const playerJumpSprite = new Image();
+playerJumpSprite.src = "./assets/hero-jump.png";
+const enemySprite = new Image();
+enemySprite.src = "./assets/moss-shell.png";
 
 const WIDTH = 960;
 const HEIGHT = 540;
@@ -693,6 +697,19 @@ function drawEnemy(enemy) {
   if (!enemy.alive) return;
   const x = enemy.x - state.cameraX;
   const y = enemy.y;
+
+  if (enemySprite.complete && enemySprite.naturalWidth > 0) {
+    const spriteWidth = 52;
+    const spriteHeight = 38;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.translate(x + enemy.w / 2, y + enemy.h);
+    ctx.scale(enemy.vx < 0 ? 1 : -1, 1);
+    ctx.drawImage(enemySprite, -spriteWidth / 2, -spriteHeight, spriteWidth, spriteHeight);
+    ctx.restore();
+    return;
+  }
+
   ctx.fillStyle = "#79d66b";
   ctx.beginPath();
   ctx.roundRect(x, y + 4, enemy.w, enemy.h - 4, 8);
@@ -710,13 +727,19 @@ function drawPlayer() {
   const y = player.y;
   if (player.invuln > 0 && Math.floor(state.time * 18) % 2 === 0) return;
 
-  if (playerSprite.complete && playerSprite.naturalWidth > 0) {
+  const activeSprite = !player.onGround
+    && playerJumpSprite.complete
+    && playerJumpSprite.naturalWidth > 0
+    ? playerJumpSprite
+    : playerSprite;
+
+  if (activeSprite.complete && activeSprite.naturalWidth > 0) {
     const spriteSize = 62;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.translate(x + player.w / 2, y + player.h);
     ctx.scale(player.facing, 1);
-    ctx.drawImage(playerSprite, -spriteSize / 2, -spriteSize, spriteSize, spriteSize);
+    ctx.drawImage(activeSprite, -spriteSize / 2, -spriteSize, spriteSize, spriteSize);
     ctx.restore();
     return;
   }
