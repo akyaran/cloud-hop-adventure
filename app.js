@@ -22,6 +22,21 @@ const playerJumpSprite = new Image();
 playerJumpSprite.src = "./assets/hero-jump.png";
 const enemySprite = new Image();
 enemySprite.src = "./assets/moss-shell.png";
+const terrainSprite = new Image();
+terrainSprite.src = "./assets/terrain-tile.png";
+const coinSprite = new Image();
+coinSprite.src = "./assets/wind-coin.png";
+const goalSprite = new Image();
+goalSprite.src = "./assets/goal-flag.png";
+const stageBackgrounds = [
+  "./assets/background-hills.png",
+  "./assets/background-sunset.png",
+  "./assets/background-night.png"
+].map((src) => {
+  const image = new Image();
+  image.src = src;
+  return image;
+});
 
 const WIDTH = 960;
 const HEIGHT = 540;
@@ -615,56 +630,28 @@ function step(dt) {
 
 function drawBackground() {
   const stage = STAGES[state.stageIndex];
-  const sky = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-  sky.addColorStop(0, stage.sky[0]);
-  sky.addColorStop(0.62, stage.sky[1]);
-  sky.addColorStop(1, stage.sky[2]);
-  ctx.fillStyle = sky;
+  const background = stageBackgrounds[state.stageIndex];
+  if (background.complete && background.naturalWidth > 0) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(background, 0, 0, WIDTH, HEIGHT);
+    ctx.restore();
+    return;
+  }
+  ctx.fillStyle = stage.sky[0];
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  ctx.save();
-  ctx.translate(-state.cameraX * 0.22, 0);
-  drawCloud(140, 92, 1.1);
-  drawCloud(520, 132, 0.82);
-  drawCloud(970, 82, 1.18);
-  drawCloud(1460, 126, 0.92);
-  drawCloud(2060, 72, 1.1);
-  drawCloud(2800, 110, 0.88);
-  ctx.restore();
-
-  ctx.save();
-  ctx.translate(-state.cameraX * 0.42, 0);
-  drawHill(120, 470, 260, stage.hills[0]);
-  drawHill(580, 485, 340, stage.hills[1]);
-  drawHill(1100, 476, 290, stage.hills[0]);
-  drawHill(1720, 488, 360, stage.hills[1]);
-  drawHill(2360, 476, 300, stage.hills[0]);
-  drawHill(3100, 488, 360, stage.hills[1]);
-  ctx.restore();
-}
-
-function drawCloud(x, y, scale) {
-  ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
-  ctx.beginPath();
-  ctx.ellipse(x, y + 18 * scale, 44 * scale, 24 * scale, 0, 0, Math.PI * 2);
-  ctx.ellipse(x + 42 * scale, y + 12 * scale, 38 * scale, 30 * scale, 0, 0, Math.PI * 2);
-  ctx.ellipse(x + 84 * scale, y + 21 * scale, 46 * scale, 22 * scale, 0, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawHill(x, y, radius, color) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, Math.PI, Math.PI * 2);
-  ctx.lineTo(x + radius, HEIGHT);
-  ctx.lineTo(x - radius, HEIGHT);
-  ctx.closePath();
-  ctx.fill();
 }
 
 function drawTile(tile) {
   const x = Math.round(tile.x - state.cameraX);
   const y = tile.y;
+  if (terrainSprite.complete && terrainSprite.naturalWidth > 0) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(terrainSprite, x, y, tile.w, tile.h);
+    ctx.restore();
+    return;
+  }
   ctx.fillStyle = "#8f6b3f";
   ctx.fillRect(x, y, tile.w, tile.h);
   ctx.fillStyle = "#5fc85f";
@@ -682,6 +669,16 @@ function drawCoin(coin) {
   const bob = Math.sin(state.time * 5 + coin.bob) * 4;
   const x = coin.x - state.cameraX + coin.w / 2;
   const y = coin.y + coin.h / 2 + bob;
+  if (coinSprite.complete && coinSprite.naturalWidth > 0) {
+    const turn = Math.max(0.22, Math.abs(Math.cos(state.time * 4 + coin.bob)));
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(turn, 1);
+    ctx.drawImage(coinSprite, -15, -15, 30, 30);
+    ctx.restore();
+    return;
+  }
   ctx.fillStyle = "#ffcf4f";
   ctx.beginPath();
   ctx.ellipse(x, y, 11, 14, Math.sin(state.time * 4 + coin.bob) * 0.25, 0, Math.PI * 2);
@@ -772,6 +769,21 @@ function drawPlayer() {
 function drawGoal() {
   const x = state.goal.x - state.cameraX;
   const y = state.goal.y;
+  if (goalSprite.complete && goalSprite.naturalWidth > 0) {
+    const width = 88;
+    const height = 118;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+      goalSprite,
+      Math.round(x - 24),
+      Math.round(y + state.goal.h - height),
+      width,
+      height
+    );
+    ctx.restore();
+    return;
+  }
   ctx.fillStyle = "#dcbf8f";
   ctx.fillRect(x, y + 4, 10, state.goal.h);
   ctx.fillStyle = "#ffcf4f";
