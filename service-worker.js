@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "cloud-hop-adventure-v5";
+const CACHE_NAME = "cloud-hop-adventure-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,6 +8,8 @@ const APP_SHELL = [
   "./app.js",
   "./assets/hero.png",
   "./assets/hero-jump.png",
+  "./assets/hero-run-1.png",
+  "./assets/hero-run-2.png",
   "./assets/moss-shell.png",
   "./assets/background-hills.png",
   "./assets/background-sunset.png",

@@ -20,6 +20,14 @@ const playerSprite = new Image();
 playerSprite.src = "./assets/hero.png";
 const playerJumpSprite = new Image();
 playerJumpSprite.src = "./assets/hero-jump.png";
+const playerRunSprites = [
+  "./assets/hero-run-1.png",
+  "./assets/hero-run-2.png"
+].map((src) => {
+  const image = new Image();
+  image.src = src;
+  return image;
+});
 const enemySprite = new Image();
 enemySprite.src = "./assets/moss-shell.png";
 const terrainSprite = new Image();
@@ -724,11 +732,15 @@ function drawPlayer() {
   const y = player.y;
   if (player.invuln > 0 && Math.floor(state.time * 18) % 2 === 0) return;
 
-  const activeSprite = !player.onGround
-    && playerJumpSprite.complete
-    && playerJumpSprite.naturalWidth > 0
-    ? playerJumpSprite
-    : playerSprite;
+  const isRunning = player.onGround && Math.abs(player.vx) > 80;
+  const runSprite = playerRunSprites[Math.floor(state.time * 12) % playerRunSprites.length];
+  let activeSprite = playerSprite;
+
+  if (!player.onGround && playerJumpSprite.complete && playerJumpSprite.naturalWidth > 0) {
+    activeSprite = playerJumpSprite;
+  } else if (isRunning && runSprite.complete && runSprite.naturalWidth > 0) {
+    activeSprite = runSprite;
+  }
 
   if (activeSprite.complete && activeSprite.naturalWidth > 0) {
     const spriteSize = 62;
