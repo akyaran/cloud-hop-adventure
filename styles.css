@@ -78,6 +78,7 @@ canvas {
 
 .hud {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   left: 12px;
   pointer-events: none;
@@ -108,6 +109,16 @@ canvas {
 .hud strong {
   font-size: 0.95rem;
   min-width: 1.5ch;
+}
+
+.wind-hud {
+  background: rgba(226, 248, 255, 0.94);
+  border-color: rgba(45, 142, 177, 0.35);
+}
+
+.wind-hud strong {
+  color: #2d8eb1;
+  min-width: 4ch;
 }
 
 .icon-button {
@@ -326,6 +337,7 @@ canvas {
   .hud {
     gap: 4px;
     left: 7px;
+    max-width: calc(100% - 54px);
     top: 7px;
   }
 

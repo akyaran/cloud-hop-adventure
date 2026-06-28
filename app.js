@@ -13,6 +13,7 @@ const soundToggle = document.getElementById("sound-toggle");
 const musicToggle = document.getElementById("music-toggle");
 const stageNumberEl = document.getElementById("stage-number");
 const coinsEl = document.getElementById("coins");
+const windLevelEl = document.getElementById("wind-level");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 
@@ -59,6 +60,12 @@ const MAX_SPEED = 285;
 const JUMP_SPEED = -720;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
+const WIND_LEVEL_MAX = 3;
+const WIND_GRAVITY = [GRAVITY, 1320, 1040, 760];
+const WIND_FALL_SPEED = [MAX_FALL, 760, 610, 470];
+const WIND_AIR_ACCEL = [MOVE_ACCEL, 3350, 3950, 4550];
+const WIND_COIN_RANGE = [0, 132, 178, 226];
+const WIND_COIN_PULL = [0, 460, 650, 840];
 const FIXED_DT = 1 / 60;
 const SAVE_KEY = "cloud-hop-save-v2";
 
@@ -73,9 +80,9 @@ const STAGES = [
       "........................................................................................",
       "..............o...........................................o.............................",
       "............#####..................o....................#####.............o..............",
-      "..........................#####...............o........................#####............",
+      "..........................#####...............o...........L............#####............",
       "......o.................................######..........................................",
-      "...#####.............o...........................................o......................",
+      "...#####.............o...............L...........................o......................",
       ".P.................#####.........E......................#####.........E................G",
       "................................#####................................#####..............#",
       "##########...################.............#########...########################...########",
@@ -92,9 +99,9 @@ const STAGES = [
       "........................................o...................................................",
       ".........o.................o..........#####................o.................................",
       ".......#####.............#####.........................########..............................",
-      "..................................o..................................o.......................",
+      "..................................o..............L...................o.......................",
       "...................E....#####....................E....#####..................#####............",
-      ".....o......................................................................................",
+      ".....o...............................L......................................................",
       ".P.#####..........#####.............#####......................#####........E...............G",
       ".............###...............###..............###.....................########............#",
       "#########....###....########...###....#######...###....###########..............#############",
@@ -112,8 +119,8 @@ const STAGES = [
       "............o..............#####...............o......................#####...................",
       "..........#####...............................#####...........................................",
       "........................E...........#####...................E....................o.............",
-      ".....o..........#####....................................#####.................#####...........",
-      "...#####........................o..............................................................",
+      ".....o..........#####.....................L..............#####.................#####...........",
+      "...#####........................o..................L...........................................",
       ".P...........E...............#####............E.................#####..........E............G",
       "..........#####.......###...................#####.........###................#####............#",
       "########...............###....##########.................###....##########..........##########",
@@ -169,8 +176,14 @@ const state = {
   enemies: [],
   particles: [],
   solids: [],
+  leafPlatforms: [],
   collectibles: [],
   goal: { x: 0, y: 0, w: 34, h: 104 },
+  totalCoins: 0,
+  windLevel: 0,
+  windPower: 0,
+  windFlash: 0,
+  windTrailCooldown: 0,
   spawnX: 92,
   spawnY: 320,
   worldWidth: WIDTH,
@@ -224,6 +237,33 @@ function approach(value, target, amount) {
   return target;
 }
 
+function getWindLevelForCoins(coins, totalCoins) {
+  if (totalCoins <= 0 || coins <= 0) return 0;
+  if (coins >= Math.max(1, Math.ceil(totalCoins * 0.86))) return 3;
+  if (coins >= Math.max(1, Math.ceil(totalCoins * 0.62))) return 2;
+  if (coins >= Math.max(1, Math.ceil(totalCoins * 0.32))) return 1;
+  return 0;
+}
+
+function isWindActive() {
+  return state.windLevel > 0 && input.jump && !player.onGround;
+}
+
+function updateWindLevel() {
+  const nextLevel = getWindLevelForCoins(state.coins, state.totalCoins);
+  if (nextLevel === state.windLevel) {
+    state.windPower = state.windLevel / WIND_LEVEL_MAX;
+    return;
+  }
+
+  state.windLevel = nextLevel;
+  state.windPower = state.windLevel / WIND_LEVEL_MAX;
+  state.windFlash = 0.75;
+  playSound("wind");
+  addWindBurst(player.x + player.w / 2, player.y + player.h / 2, 22 + state.windLevel * 8);
+  addScreenWindBurst(18 + state.windLevel * 8);
+}
+
 function resizeCanvas() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const nextWidth = Math.round(WIDTH * dpr);
@@ -240,9 +280,11 @@ function parseStage(index) {
   const stage = STAGES[index];
   const width = Math.max(...stage.rows.map((row) => row.length));
   state.solids = [];
+  state.leafPlatforms = [];
   state.collectibles = [];
   state.enemies = [];
   state.goal = { x: 0, y: 0, w: 34, h: 104 };
+  state.totalCoins = 0;
 
   for (let y = 0; y < stage.rows.length; y += 1) {
     const row = stage.rows[y].padEnd(width, ".");
@@ -253,6 +295,7 @@ function parseStage(index) {
       if (tile === "#") {
         state.solids.push({ x: px, y: py, w: TILE, h: TILE });
       } else if (tile === "o") {
+        state.totalCoins += 1;
         state.collectibles.push({
           x: px + 14,
           y: py + 12,
@@ -260,6 +303,14 @@ function parseStage(index) {
           h: 20,
           taken: false,
           bob: (x + y) * 0.4
+        });
+      } else if (tile === "L") {
+        state.leafPlatforms.push({
+          x: px,
+          y: py + 26,
+          w: TILE,
+          h: 14,
+          bob: (x + y) * 0.37
         });
       } else if (tile === "E") {
         state.enemies.push({
@@ -315,6 +366,10 @@ function resetLevel(index = state.selectedStage) {
   state.coins = 0;
   state.score = 0;
   state.lives = 3;
+  state.windLevel = 0;
+  state.windPower = 0;
+  state.windFlash = 0;
+  state.windTrailCooldown = 0;
   state.time = 0;
   state.cameraX = 0;
   state.shake = 0;
@@ -371,6 +426,7 @@ function showOverlay(title, text, buttonText, showMenu = true) {
 function updateHud() {
   stageNumberEl.textContent = String(state.stageIndex + 1);
   coinsEl.textContent = String(state.coins);
+  windLevelEl.textContent = `Lv.${state.windLevel}`;
   scoreEl.textContent = String(state.score);
   livesEl.textContent = String(state.lives);
 }
@@ -425,6 +481,10 @@ function playSound(name) {
     playTone(990, 0.12, "sine", 0.12, 0.07);
   }
   if (name === "stomp") playTone(155, 0.16, "square", 0.15);
+  if (name === "wind") {
+    playTone(587.33, 0.14, "triangle", 0.11);
+    playTone(880, 0.18, "sine", 0.09, 0.08);
+  }
   if (name === "hurt") playTone(105, 0.3, "sawtooth", 0.12);
   if (name === "clear") {
     playTone(523.25, 0.2, "triangle", 0.16);
@@ -454,7 +514,38 @@ function addParticles(x, y, color, count) {
       vy: -80 - Math.random() * 220,
       life: 0.45 + Math.random() * 0.35,
       size: 3 + Math.random() * 5,
-      color
+      color,
+      gravity: 720
+    });
+  }
+}
+
+function addWindBurst(x, y, count) {
+  for (let i = 0; i < count; i += 1) {
+    state.particles.push({
+      x: x + (Math.random() - 0.5) * 70,
+      y: y + (Math.random() - 0.5) * 48,
+      vx: -260 - Math.random() * 220,
+      vy: -80 + (Math.random() - 0.5) * 180,
+      life: 0.35 + Math.random() * 0.35,
+      size: 2 + Math.random() * 5,
+      color: Math.random() > 0.45 ? "#e2fbff" : "#8be8ff",
+      gravity: -80
+    });
+  }
+}
+
+function addScreenWindBurst(count) {
+  for (let i = 0; i < count; i += 1) {
+    state.particles.push({
+      x: state.cameraX + Math.random() * WIDTH,
+      y: HEIGHT - Math.random() * 84,
+      vx: -120 - Math.random() * 260,
+      vy: -180 - Math.random() * 180,
+      life: 0.45 + Math.random() * 0.38,
+      size: 2 + Math.random() * 6,
+      color: Math.random() > 0.5 ? "#f7ffff" : "#95edff",
+      gravity: -110
     });
   }
 }
@@ -482,6 +573,7 @@ function collectCoin(coin) {
   state.score += 100;
   playSound("coin");
   addParticles(coin.x + coin.w / 2, coin.y + coin.h / 2, "#ffcf4f", 8);
+  updateWindLevel();
   updateHud();
 }
 
@@ -509,8 +601,13 @@ function finishLevel() {
   );
 }
 
+function getActiveSolids() {
+  if (state.windLevel < 2) return state.solids;
+  return state.solids.concat(state.leafPlatforms);
+}
+
 function collideWithSolids(entity, axis) {
-  for (const solid of state.solids) {
+  for (const solid of getActiveSolids()) {
     if (!rectsOverlap(entity, solid)) continue;
     if (axis === "x") {
       if (entity.vx > 0) entity.x = solid.x - entity.w;
@@ -531,8 +628,12 @@ function collideWithSolids(entity, axis) {
 
 function updatePlayer(dt) {
   const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  const windActive = isWindActive();
+  const moveAccel = !player.onGround && windActive && state.windLevel >= 2
+    ? WIND_AIR_ACCEL[state.windLevel]
+    : MOVE_ACCEL;
   if (dir !== 0) {
-    player.vx += dir * MOVE_ACCEL * dt;
+    player.vx += dir * moveAccel * dt;
     player.facing = dir;
   } else {
     player.vx = approach(player.vx, 0, (player.onGround ? GROUND_FRICTION : AIR_FRICTION) * dt);
@@ -555,8 +656,23 @@ function updatePlayer(dt) {
   }
 
   if (input.jumpReleased && player.vy < -170) player.vy *= 0.55;
-  const gravity = input.jump && player.vy < 0 ? HOLD_GRAVITY : GRAVITY;
-  player.vy = Math.min(MAX_FALL, player.vy + gravity * dt);
+  let gravity = input.jump && player.vy < 0 ? HOLD_GRAVITY : GRAVITY;
+  let maxFall = MAX_FALL;
+  if (windActive) {
+    gravity = player.vy < 0 ? Math.min(HOLD_GRAVITY, WIND_GRAVITY[state.windLevel]) : WIND_GRAVITY[state.windLevel];
+    maxFall = WIND_FALL_SPEED[state.windLevel];
+    if (state.windLevel >= 3 && player.vy > 120) {
+      player.vy = Math.max(120, player.vy - 1200 * dt);
+    }
+    state.windTrailCooldown -= dt;
+    if (state.windTrailCooldown <= 0) {
+      addWindBurst(player.x + player.w / 2, player.y + player.h / 2, 4 + state.windLevel * 2);
+      state.windTrailCooldown = 0.055;
+    }
+  } else {
+    state.windTrailCooldown = Math.min(state.windTrailCooldown, 0);
+  }
+  player.vy = Math.min(maxFall, player.vy + gravity * dt);
   player.invuln = Math.max(0, player.invuln - dt);
 
   player.x += player.vx * dt;
@@ -597,7 +713,29 @@ function updateEnemies(dt) {
   }
 }
 
-function updateCollectibles() {
+function updateCoinAttraction(dt) {
+  if (!isWindActive()) return;
+  const range = WIND_COIN_RANGE[state.windLevel];
+  const pull = WIND_COIN_PULL[state.windLevel] * dt;
+  const playerCx = player.x + player.w / 2;
+  const playerCy = player.y + player.h / 2;
+
+  for (const coin of state.collectibles) {
+    if (coin.taken) continue;
+    const coinCx = coin.x + coin.w / 2;
+    const coinCy = coin.y + coin.h / 2;
+    const dx = playerCx - coinCx;
+    const dy = playerCy - coinCy;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= 1 || distance > range) continue;
+    const strength = (1 - distance / range) * pull;
+    coin.x += (dx / distance) * strength;
+    coin.y += (dy / distance) * strength;
+  }
+}
+
+function updateCollectibles(dt) {
+  updateCoinAttraction(dt);
   for (const coin of state.collectibles) {
     if (!coin.taken && rectsOverlap(player, coin)) collectCoin(coin);
   }
@@ -607,7 +745,7 @@ function updateCollectibles() {
 function updateParticles(dt) {
   for (const particle of state.particles) {
     particle.life -= dt;
-    particle.vy += 720 * dt;
+    particle.vy += (particle.gravity ?? 720) * dt;
     particle.x += particle.vx * dt;
     particle.y += particle.vy * dt;
   }
@@ -627,9 +765,10 @@ function step(dt) {
   }
   state.time += dt;
   state.shake = Math.max(0, state.shake - dt);
+  state.windFlash = Math.max(0, state.windFlash - dt);
   updatePlayer(dt);
   updateEnemies(dt);
-  updateCollectibles();
+  updateCollectibles(dt);
   updateParticles(dt);
   updateCamera();
   input.jumpPressed = false;
@@ -670,6 +809,27 @@ function drawTile(tile) {
   ctx.fillRect(x + 28, y + 32, 15, 7);
   ctx.strokeStyle = "rgba(16, 32, 51, 0.16)";
   ctx.strokeRect(x + 0.5, y + 0.5, tile.w - 1, tile.h - 1);
+}
+
+function drawLeafPlatform(platform) {
+  const x = Math.round(platform.x - state.cameraX);
+  const y = Math.round(platform.y + Math.sin(state.time * 3 + platform.bob) * 3);
+  const active = state.windLevel >= 2;
+
+  ctx.save();
+  ctx.globalAlpha = active ? 1 : 0.38;
+  ctx.fillStyle = active ? "#7fe07e" : "#b7f3df";
+  ctx.strokeStyle = active ? "#2d7f55" : "#79bfa9";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(x + platform.w / 2, y + platform.h / 2, platform.w / 2, platform.h, -0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = active ? "#f7fff1" : "#e7fff8";
+  ctx.fillRect(x + 9, y + 6, platform.w - 18, 3);
+  ctx.fillStyle = active ? "#3ba464" : "#94d8c5";
+  ctx.fillRect(x + platform.w / 2 - 2, y + 3, 4, platform.h + 4);
+  ctx.restore();
 }
 
 function drawCoin(coin) {
@@ -819,13 +979,29 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
+function drawWindFlash() {
+  if (state.windFlash <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = clamp(state.windFlash, 0, 0.42);
+  ctx.fillStyle = "#e8fbff";
+  for (let i = 0; i < 10; i += 1) {
+    const y = HEIGHT - 28 - i * 15;
+    const width = 100 + i * 34;
+    const x = ((state.time * 220 + i * 83) % (WIDTH + width)) - width;
+    ctx.fillRect(x, y, width, 4);
+  }
+  ctx.restore();
+}
+
 function draw() {
   ctx.save();
   if (state.shake > 0) ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 6);
   drawBackground();
-  drawGoal();
   const left = state.cameraX - TILE;
   const right = state.cameraX + WIDTH + TILE;
+  for (const platform of state.leafPlatforms) {
+    if (platform.x + platform.w > left && platform.x < right) drawLeafPlatform(platform);
+  }
   for (const solid of state.solids) {
     if (solid.x + solid.w > left && solid.x < right) drawTile(solid);
   }
@@ -835,8 +1011,10 @@ function draw() {
   for (const enemy of state.enemies) {
     if (enemy.x + enemy.w > left && enemy.x < right) drawEnemy(enemy);
   }
-  drawParticles();
+  drawGoal();
   drawPlayer();
+  drawParticles();
+  drawWindFlash();
   ctx.restore();
 }
 
