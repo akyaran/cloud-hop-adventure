@@ -60,12 +60,15 @@ const MAX_SPEED = 285;
 const JUMP_SPEED = -720;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
+const WIND_LEVEL_MIN = 1;
 const WIND_LEVEL_MAX = 3;
+const WIND_COINS_PER_LEVEL = 3;
 const WIND_GRAVITY = [GRAVITY, 1320, 1040, 760];
 const WIND_FALL_SPEED = [MAX_FALL, 760, 610, 470];
 const WIND_AIR_ACCEL = [MOVE_ACCEL, 3350, 3950, 4550];
 const WIND_COIN_RANGE = [0, 132, 178, 226];
 const WIND_COIN_PULL = [0, 460, 650, 840];
+const UPDRAFT_FORCE = 1420;
 const FIXED_DT = 1 / 60;
 const SAVE_KEY = "cloud-hop-save-v2";
 
@@ -129,6 +132,105 @@ const STAGES = [
   }
 ];
 
+STAGES.length = 0;
+STAGES.push(
+  {
+    name: "そよ風の丘",
+    sky: ["#5fbce9", "#a9e7fb", "#e2f8e9"],
+    hills: ["#72cf78", "#48ad64"],
+    rows: [
+      "....................................................................................................................",
+      "....................................................................................................................",
+      "................o.............o................................o........................o..........................",
+      "..............#####.........#####.............o..............#####..............o......#####.......................",
+      "...........................................#####.................................................................",
+      "........o.........................F..................o...........L...........F...............o....................",
+      "......#####...........o..................#####.....#####...................#####............#####.................",
+      "...P...............#####......E.........................B...........L...............E.........................G...",
+      "...........#####....................#####....................#####......................#####...................#",
+      "..................................................###...................###............................########",
+      "##############...################......##################...###################...##################...#########",
+      "##############...################......##################...###################...##################...#########"
+    ]
+  },
+  {
+    name: "夕焼けの谷",
+    sky: ["#4a83bb", "#efaa83", "#ffe2a6"],
+    hills: ["#6bb678", "#3d8e67"],
+    rows: [
+      "........................................................................................................................",
+      "........................................................................................................................",
+      ".......................o........................o............................o...........................o............",
+      "...........o.........#####.........o..........#####..............o..........#####.......................#####..........",
+      ".........#####...................#####.........................#####...................................................",
+      "..................A.................................F....................A...................F.......................",
+      ".....o.....................L...........o........................L..................o.....................L............",
+      "...#####..........E......#####.......#####......B..............#####........E.....#####......A..........#####.........",
+      ".P...........#####.........................#####...........#####........................#####......................G.",
+      ".................###..............###...............................###.........................###................#",
+      "###########......###...###############...################......#####...#############......######...################",
+      "###########......###...###############...################......#####...#############......######...################"
+    ]
+  },
+  {
+    name: "星明かりの峰",
+    sky: ["#243d72", "#5d74a7", "#b4b9d9"],
+    hills: ["#507c75", "#31585d"],
+    rows: [
+      "............................................................................................................................",
+      "............................................................................................................................",
+      "................o......................o......................o........................o......................o............",
+      "..............#####..................#####..................#####....................#####..................#####..........",
+      ".....o........................A....................o.....................A.................................................",
+      "...#####.............F....................L......#####.........F..................L...........o..............F............",
+      ".............E....#####.......B........#####................#####......E........#####.......#####....B.....#####..........",
+      ".P.........................#####........................A.............................#####.........................G.....",
+      "..........#####....................#####..........E....................#####......................#####.................#",
+      "...................###.......................###..................###.......................###................########",
+      "########...........###....##############.....###....##########....###....###############....###....###################",
+      "########...........###....##############.....###....##########....###....###############....###....###################"
+    ]
+  },
+  {
+    name: "プロペラ雲の森",
+    sky: ["#5bbdd6", "#b7f0df", "#f5ffe8"],
+    hills: ["#7ed487", "#3e9b70"],
+    rows: [
+      "..............................................................................................................................",
+      "..............................................................................................................................",
+      "..................o................o..................o..................o..................o..................o............",
+      "................#####............#####..............#####..............#####..............#####..............#####..........",
+      ".......o..................................A.....................................A.............................................",
+      ".....#####...........F........L................F...........L................F...........L................F.................",
+      "..............E....#####....#####......B.....#####.......#####......E.....#####.......#####......B.....#####..............",
+      ".P.........................o..........................o..........................o.................................G.......",
+      "...........#####.........#####...............#####..........A..........#####...............#####..............#####......#",
+      "....................###..................###......................###..................###.........................#######",
+      "##############......###...###################...################...###...###################...################...########",
+      "##############......###...###################...################...###...###################...################...########"
+    ]
+  },
+  {
+    name: "風渡りの空橋",
+    sky: ["#2f5892", "#7fb7d8", "#ffd89f"],
+    hills: ["#5c987e", "#2e5d62"],
+    rows: [
+      "................................................................................................................................",
+      "................................................................................................................................",
+      "............o................o................o................o................o................o................o............",
+      "..........#####............#####............#####............#####............#####............#####............#####..........",
+      "....................A................A................F................A................F................A....................",
+      "......F........L...........F........L...........F........L...........F........L...........F........L...........F.............",
+      "....#####....#####..E....#####....#####..B....#####....#####..E....#####....#####..B....#####....#####..E....#####..........",
+      ".P.......................o....................o....................o....................o....................o............G..",
+      "..........#####........#####........A.......#####........#####........A.......#####........#####........A.......#####.......#",
+      ".................###...................###...................###...................###...................###............####",
+      "##########.......###....############....###....############....###....############....###....############....###############",
+      "##########.......###....############....###....############....###....############....###....############....###############"
+    ]
+  }
+);
+
 function loadSave() {
   const fallback = {
     unlocked: 1,
@@ -174,16 +276,21 @@ const state = {
   lives: 3,
   time: 0,
   enemies: [],
+  flowers: [],
   particles: [],
   solids: [],
   leafPlatforms: [],
   collectibles: [],
   goal: { x: 0, y: 0, w: 34, h: 104 },
   totalCoins: 0,
-  windLevel: 0,
+  windLevel: WIND_LEVEL_MIN,
   windPower: 0,
+  windCharge: 0,
   windFlash: 0,
   windTrailCooldown: 0,
+  combo: 0,
+  comboTimer: 0,
+  comboFlash: 0,
   spawnX: 92,
   spawnY: 320,
   worldWidth: WIDTH,
@@ -238,19 +345,24 @@ function approach(value, target, amount) {
 }
 
 function getWindLevelForCoins(coins, totalCoins) {
-  if (totalCoins <= 0 || coins <= 0) return 0;
-  if (coins >= Math.max(1, Math.ceil(totalCoins * 0.86))) return 3;
-  if (coins >= Math.max(1, Math.ceil(totalCoins * 0.62))) return 2;
-  if (coins >= Math.max(1, Math.ceil(totalCoins * 0.32))) return 1;
-  return 0;
+  if (totalCoins <= 0) return WIND_LEVEL_MIN;
+  return clamp(
+    WIND_LEVEL_MIN + Math.floor(coins / WIND_COINS_PER_LEVEL),
+    WIND_LEVEL_MIN,
+    WIND_LEVEL_MAX
+  );
 }
 
 function isWindActive() {
-  return state.windLevel > 0 && input.jump && !player.onGround;
+  return state.windLevel > WIND_LEVEL_MIN - 1 && input.jump && !player.onGround;
 }
 
 function updateWindLevel() {
-  const nextLevel = getWindLevelForCoins(state.coins, state.totalCoins);
+  const nextLevel = clamp(
+    WIND_LEVEL_MIN + Math.floor(state.windCharge / WIND_COINS_PER_LEVEL),
+    WIND_LEVEL_MIN,
+    WIND_LEVEL_MAX
+  );
   if (nextLevel === state.windLevel) {
     state.windPower = state.windLevel / WIND_LEVEL_MAX;
     return;
@@ -283,6 +395,7 @@ function parseStage(index) {
   state.leafPlatforms = [];
   state.collectibles = [];
   state.enemies = [];
+  state.flowers = [];
   state.goal = { x: 0, y: 0, w: 34, h: 104 };
   state.totalCoins = 0;
 
@@ -312,18 +425,33 @@ function parseStage(index) {
           h: 14,
           bob: (x + y) * 0.37
         });
-      } else if (tile === "E") {
+      } else if (tile === "F") {
+        state.flowers.push({
+          x: px + 6,
+          y: py + 3,
+          w: 36,
+          h: 44,
+          spin: 0,
+          active: 0,
+          bob: (x + y) * 0.2
+        });
+      } else if (tile === "E" || tile === "B" || tile === "A") {
+        const flying = tile === "A";
         state.enemies.push({
           x: px + 6,
-          y: py + 8,
-          w: 36,
-          h: 32,
-          vx: x % 2 ? -72 : 72,
+          y: flying ? py + 4 : py + 8,
+          baseY: flying ? py + 4 : py + 8,
+          w: flying ? 34 : 36,
+          h: flying ? 28 : 32,
+          vx: tile === "B" ? (x % 2 ? -58 : 58) : (x % 2 ? -72 : 72),
           vy: 0,
+          type: tile === "B" ? "hopper" : flying ? "drifter" : "walker",
           minX: Math.max(0, px - 120),
-          maxX: Math.min(width * TILE, px + 170),
+          maxX: Math.min(width * TILE, px + (flying ? 220 : 170)),
           alive: true,
-          onGround: false
+          onGround: false,
+          jumpCooldown: 0.45 + ((x + y) % 5) * 0.16,
+          phase: (x + y) * 0.7
         });
       } else if (tile === "G") {
         state.goal = { x: px + 7, y: py - 56, w: 34, h: 104 };
@@ -359,17 +487,34 @@ function resetPlayer() {
   player.invuln = 1.1;
 }
 
-function resetLevel(index = state.selectedStage) {
+function resetWindToMinimum() {
+  state.windLevel = WIND_LEVEL_MIN;
+  state.windPower = state.windLevel / WIND_LEVEL_MAX;
+  state.windCharge = 0;
+  state.windFlash = 0;
+  state.combo = 0;
+  state.comboTimer = 0;
+  state.comboFlash = 0;
+}
+
+function resetLevel(index = state.selectedStage, options = {}) {
+  const preserveWind = options.preserveWind === true;
   state.stageIndex = index;
   parseStage(index);
   state.particles = [];
   state.coins = 0;
   state.score = 0;
   state.lives = 3;
-  state.windLevel = 0;
-  state.windPower = 0;
+  if (!preserveWind) resetWindToMinimum();
+  else {
+    state.windLevel = clamp(state.windLevel, WIND_LEVEL_MIN, WIND_LEVEL_MAX);
+    state.windPower = state.windLevel / WIND_LEVEL_MAX;
+  }
   state.windFlash = 0;
   state.windTrailCooldown = 0;
+  state.combo = 0;
+  state.comboTimer = 0;
+  state.comboFlash = 0;
   state.time = 0;
   state.cameraX = 0;
   state.shake = 0;
@@ -380,7 +525,8 @@ function resetLevel(index = state.selectedStage) {
 
 function startGame() {
   unlockAudio();
-  resetLevel(state.selectedStage);
+  const preserveWind = state.mode === "clear";
+  resetLevel(state.selectedStage, { preserveWind });
   state.mode = "playing";
   state.lastPauseWasAutomatic = false;
   overlay.hidden = true;
@@ -550,8 +696,30 @@ function addScreenWindBurst(count) {
   }
 }
 
-function playerHurt() {
+function playerHurt(source = "enemy", hazard = null) {
   if (player.invuln > 0 || state.mode !== "playing") return;
+
+  if (source === "enemy" && state.windLevel > WIND_LEVEL_MIN) {
+    state.windLevel -= 1;
+    state.windCharge = Math.max(0, (state.windLevel - WIND_LEVEL_MIN) * WIND_COINS_PER_LEVEL);
+    state.windPower = state.windLevel / WIND_LEVEL_MAX;
+    state.windFlash = 0.45;
+    state.shake = 0.14;
+    player.invuln = 1.15;
+    player.vy = -360;
+    if (hazard) {
+      const playerCx = player.x + player.w / 2;
+      const hazardCx = hazard.x + hazard.w / 2;
+      player.vx = playerCx < hazardCx ? -320 : 320;
+      player.facing = player.vx < 0 ? -1 : 1;
+    }
+    playSound("wind");
+    addWindBurst(player.x + player.w / 2, player.y + player.h / 2, 30);
+    updateHud();
+    return;
+  }
+
+  if (source === "fall") resetWindToMinimum();
   state.lives -= 1;
   state.shake = 0.24;
   playSound("hurt");
@@ -570,9 +738,18 @@ function playerHurt() {
 function collectCoin(coin) {
   coin.taken = true;
   state.coins += 1;
-  state.score += 100;
+  state.windCharge += 1;
+  if (isWindActive()) {
+    state.combo = state.comboTimer > 0 ? state.combo + 1 : 1;
+    state.comboTimer = 1.25;
+    state.comboFlash = 0.7;
+  } else {
+    state.combo = 0;
+    state.comboTimer = 0;
+  }
+  state.score += 100 + Math.min(state.combo, 8) * 25;
   playSound("coin");
-  addParticles(coin.x + coin.w / 2, coin.y + coin.h / 2, "#ffcf4f", 8);
+  addParticles(coin.x + coin.w / 2, coin.y + coin.h / 2, state.combo > 1 ? "#8be8ff" : "#ffcf4f", 8 + Math.min(state.combo, 6));
   updateWindLevel();
   updateHud();
 }
@@ -681,7 +858,7 @@ function updatePlayer(dt) {
   player.y += player.vy * dt;
   collideWithSolids(player, "y");
 
-  if (player.y > HEIGHT + 260) playerHurt();
+  if (player.y > HEIGHT + 260) playerHurt("fall");
 }
 
 function updateEnemies(dt) {
@@ -693,23 +870,65 @@ function updateEnemies(dt) {
       enemy.x = clamp(enemy.x, enemy.minX, enemy.maxX - enemy.w);
     }
 
-    enemy.vy = Math.min(MAX_FALL, enemy.vy + GRAVITY * dt);
-    enemy.y += enemy.vy * dt;
-    enemy.onGround = false;
-    collideWithSolids(enemy, "y");
+    if (enemy.type === "drifter") {
+      enemy.phase += dt * 3.2;
+      enemy.y = enemy.baseY + Math.sin(enemy.phase) * 20;
+    } else {
+      enemy.jumpCooldown -= dt;
+      if (enemy.type === "hopper" && enemy.onGround && enemy.jumpCooldown <= 0) {
+        enemy.vy = -520;
+        enemy.onGround = false;
+        enemy.jumpCooldown = 1.1 + Math.random() * 0.55;
+      }
+      enemy.vy = Math.min(MAX_FALL, enemy.vy + GRAVITY * dt);
+      enemy.y += enemy.vy * dt;
+      enemy.onGround = false;
+      collideWithSolids(enemy, "y");
+    }
 
     if (!rectsOverlap(player, enemy)) continue;
-    const stomp = player.vy > 130 && player.y + player.h - enemy.y < 22;
+    const stompWindow = enemy.type === "drifter" ? 18 : 22;
+    const stomp = player.vy > 130 && player.y + player.h - enemy.y < stompWindow;
     if (stomp) {
       enemy.alive = false;
-      player.vy = -430;
-      state.score += 250;
+      player.vy = enemy.type === "hopper" ? -520 : -430;
+      state.score += enemy.type === "drifter" ? 350 : enemy.type === "hopper" ? 300 : 250;
       playSound("stomp");
-      addParticles(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, "#79d66b", 12);
+      addParticles(
+        enemy.x + enemy.w / 2,
+        enemy.y + enemy.h / 2,
+        enemy.type === "drifter" ? "#8be8ff" : enemy.type === "hopper" ? "#ffb25f" : "#79d66b",
+        12
+      );
       updateHud();
     } else {
-      playerHurt();
+      playerHurt("enemy", enemy);
     }
+  }
+}
+
+function updateFlowers(dt) {
+  const windActive = isWindActive();
+  const playerCx = player.x + player.w / 2;
+  const playerCy = player.y + player.h / 2;
+
+  for (const flower of state.flowers) {
+    const flowerCx = flower.x + flower.w / 2;
+    const flowerCy = flower.y + flower.h / 2;
+    const dx = playerCx - flowerCx;
+    const dy = playerCy - flowerCy;
+    const nearWind = windActive && Math.abs(dx) < 86 && Math.abs(dy) < 150;
+    flower.active = approach(flower.active, nearWind ? 1 : 0, dt * 3.8);
+    flower.spin += dt * (2.2 + flower.active * 18);
+
+    const inColumn = flower.active > 0.45
+      && Math.abs(dx) < 62
+      && playerCy < flower.y + flower.h + 12
+      && playerCy > flower.y - 230;
+    if (!inColumn) continue;
+    player.vy = Math.min(player.vy, -130 - flower.active * 170);
+    player.vy -= UPDRAFT_FORCE * flower.active * dt;
+    addWindBurst(player.x + player.w / 2, player.y + player.h / 2, 2);
   }
 }
 
@@ -766,7 +985,11 @@ function step(dt) {
   state.time += dt;
   state.shake = Math.max(0, state.shake - dt);
   state.windFlash = Math.max(0, state.windFlash - dt);
+  state.comboTimer = Math.max(0, state.comboTimer - dt);
+  if (state.comboTimer <= 0) state.combo = 0;
+  state.comboFlash = Math.max(0, state.comboFlash - dt);
   updatePlayer(dt);
+  updateFlowers(dt);
   updateEnemies(dt);
   updateCollectibles(dt);
   updateParticles(dt);
@@ -832,6 +1055,43 @@ function drawLeafPlatform(platform) {
   ctx.restore();
 }
 
+function drawFlower(flower) {
+  const x = Math.round(flower.x - state.cameraX);
+  const y = Math.round(flower.y + Math.sin(state.time * 2.5 + flower.bob) * 2);
+  const cx = x + flower.w / 2;
+  const cy = y + 15;
+
+  ctx.save();
+  if (flower.active > 0.08) {
+    ctx.globalAlpha = 0.18 + flower.active * 0.22;
+    ctx.fillStyle = "#dffbff";
+    for (let i = 0; i < 4; i += 1) {
+      ctx.fillRect(cx - 28 + i * 18, y - 150 + i * 18, 8, 120 - i * 16);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.strokeStyle = "#2d7f55";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(cx, y + 24);
+  ctx.lineTo(cx, y + flower.h);
+  ctx.stroke();
+  ctx.fillStyle = "#5fcf6a";
+  ctx.fillRect(cx - 12, y + flower.h - 12, 24, 8);
+
+  ctx.translate(cx, cy);
+  ctx.rotate(flower.spin);
+  ctx.fillStyle = flower.active > 0.4 ? "#fff2a8" : "#ffd36b";
+  for (let i = 0; i < 4; i += 1) {
+    ctx.rotate(Math.PI / 2);
+    ctx.fillRect(0, -5, 22, 10);
+  }
+  ctx.fillStyle = "#f26f52";
+  ctx.fillRect(-6, -6, 12, 12);
+  ctx.restore();
+}
+
 function drawCoin(coin) {
   if (coin.taken) return;
   const bob = Math.sin(state.time * 5 + coin.bob) * 4;
@@ -863,7 +1123,7 @@ function drawEnemy(enemy) {
   const x = enemy.x - state.cameraX;
   const y = enemy.y;
 
-  if (enemySprite.complete && enemySprite.naturalWidth > 0) {
+  if (enemy.type === "walker" && enemySprite.complete && enemySprite.naturalWidth > 0) {
     const spriteWidth = 52;
     const spriteHeight = 38;
     ctx.save();
@@ -875,16 +1135,40 @@ function drawEnemy(enemy) {
     return;
   }
 
-  ctx.fillStyle = "#79d66b";
+  if (enemy.type === "drifter") {
+    ctx.save();
+    ctx.fillStyle = "#82e8ff";
+    ctx.strokeStyle = "#2f78a8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(x + enemy.w / 2, y + enemy.h / 2, enemy.w / 2, enemy.h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x + 8, y + 8, 6, 5);
+    ctx.fillStyle = "#102033";
+    ctx.fillRect(x + 20, y + 11, 4, 4);
+    ctx.fillRect(x + 27, y + 11, 4, 4);
+    ctx.fillStyle = "#57badb";
+    ctx.fillRect(x + 4, y + enemy.h - 4, enemy.w - 8, 4);
+    ctx.restore();
+    return;
+  }
+
+  ctx.fillStyle = enemy.type === "hopper" ? "#ffb25f" : "#79d66b";
   ctx.beginPath();
   ctx.roundRect(x, y + 4, enemy.w, enemy.h - 4, 8);
   ctx.fill();
-  ctx.fillStyle = "#326a3b";
+  ctx.fillStyle = enemy.type === "hopper" ? "#853f2a" : "#326a3b";
   ctx.fillRect(x + 7, y + 14, 5, 5);
   ctx.fillRect(x + enemy.w - 12, y + 14, 5, 5);
-  ctx.fillStyle = "#2f5b33";
+  ctx.fillStyle = enemy.type === "hopper" ? "#513020" : "#2f5b33";
   ctx.fillRect(x + 8, y + enemy.h - 4, 8, 5);
   ctx.fillRect(x + enemy.w - 16, y + enemy.h - 4, 8, 5);
+  if (enemy.type === "hopper") {
+    ctx.fillStyle = "#fff1b8";
+    ctx.fillRect(x + 13, y + 5, 10, 4);
+  }
 }
 
 function drawPlayer() {
@@ -993,6 +1277,19 @@ function drawWindFlash() {
   ctx.restore();
 }
 
+function drawCombo() {
+  if (state.combo <= 1 || state.comboFlash <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = clamp(state.comboFlash * 1.8, 0, 1);
+  ctx.fillStyle = "#102033";
+  ctx.fillRect(WIDTH / 2 - 92, 70, 184, 34);
+  ctx.fillStyle = "#8be8ff";
+  ctx.font = "900 18px Courier New, monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(`BREEZE x${state.combo}`, WIDTH / 2, 93);
+  ctx.restore();
+}
+
 function draw() {
   ctx.save();
   if (state.shake > 0) ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 6);
@@ -1001,6 +1298,9 @@ function draw() {
   const right = state.cameraX + WIDTH + TILE;
   for (const platform of state.leafPlatforms) {
     if (platform.x + platform.w > left && platform.x < right) drawLeafPlatform(platform);
+  }
+  for (const flower of state.flowers) {
+    if (flower.x + flower.w > left && flower.x < right) drawFlower(flower);
   }
   for (const solid of state.solids) {
     if (solid.x + solid.w > left && solid.x < right) drawTile(solid);
@@ -1015,6 +1315,7 @@ function draw() {
   drawPlayer();
   drawParticles();
   drawWindFlash();
+  drawCombo();
   ctx.restore();
 }
 
