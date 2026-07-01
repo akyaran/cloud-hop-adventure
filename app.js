@@ -577,7 +577,21 @@ function updateHud() {
   livesEl.textContent = String(state.lives);
 }
 
+function ensureStageButtons() {
+  const existing = new Set([...document.querySelectorAll("[data-stage]")].map((button) => Number(button.dataset.stage)));
+  for (let index = 0; index < STAGES.length; index += 1) {
+    if (existing.has(index)) continue;
+    const button = document.createElement("button");
+    button.className = "stage-option";
+    button.type = "button";
+    button.dataset.stage = String(index);
+    button.textContent = String(index + 1);
+    stagePicker.appendChild(button);
+  }
+}
+
 function updateStagePicker() {
+  ensureStageButtons();
   for (const button of document.querySelectorAll("[data-stage]")) {
     const index = Number(button.dataset.stage);
     button.disabled = index >= progress.unlocked;
@@ -758,10 +772,12 @@ function finishLevel() {
   if (state.mode !== "playing") return;
   state.mode = "clear";
   state.score += 1000 + state.lives * 250;
+  const allClear = state.stageIndex >= STAGES.length - 1;
+  const nextStage = Math.min(state.stageIndex + 1, STAGES.length - 1);
   progress.bestScores[state.stageIndex] = Math.max(progress.bestScores[state.stageIndex], state.score);
-  progress.unlocked = Math.min(STAGES.length, Math.max(progress.unlocked, state.stageIndex + 2));
-  if (state.stageIndex + 1 < progress.unlocked) {
-    state.selectedStage = Math.min(state.stageIndex + 1, STAGES.length - 1);
+  progress.unlocked = Math.min(STAGES.length, Math.max(progress.unlocked, nextStage + 1));
+  if (!allClear) {
+    state.selectedStage = nextStage;
   }
   progress.selectedStage = state.selectedStage;
   saveProgress();
@@ -769,7 +785,6 @@ function finishLevel() {
   updateStagePicker();
   playSound("clear");
   stageWrap.classList.remove("is-playing");
-  const allClear = state.stageIndex === STAGES.length - 1;
   showOverlay(
     allClear ? "全ステージクリア！" : "ステージクリア！",
     allClear ? "星明かりの峰を越えました。全ステージ制覇です。" : `次の「${STAGES[state.selectedStage].name}」が開きました。`,

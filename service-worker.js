@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "cloud-hop-adventure-v8";
+const CACHE_NAME = "cloud-hop-adventure-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
