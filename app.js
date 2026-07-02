@@ -38,7 +38,7 @@ const coinSprite = new Image();
 coinSprite.src = "./assets/wind-coin.png";
 const goalSprite = new Image();
 goalSprite.src = "./assets/goal-flag.png";
-const APP_VERSION = "v11";
+const APP_VERSION = "v12";
 const stageBackgrounds = [
   "./assets/background-hills.png",
   "./assets/background-sunset.png",
@@ -397,7 +397,7 @@ function ensureVersionBadge() {
     versionBadge.className = "version-badge";
     stageWrap.appendChild(versionBadge);
   }
-  versionBadge.textContent = APP_VERSION;
+  versionBadge.textContent = `${APP_VERSION} S${state.selectedStage + 1}/${STAGES.length}`;
 }
 
 function parseStage(index) {
@@ -587,6 +587,7 @@ function updateHud() {
   windLevelEl.textContent = `Lv.${state.windLevel}`;
   scoreEl.textContent = String(state.score);
   livesEl.textContent = String(state.lives);
+  ensureVersionBadge();
 }
 
 function ensureStageButtons() {
@@ -1455,11 +1456,13 @@ stageWrap.addEventListener("lostpointercapture", releasePointer);
 stagePicker.addEventListener("click", (event) => {
   const button = event.target.closest("[data-stage]");
   if (!button || button.disabled) return;
+  const preserveWind = state.mode === "clear";
   state.selectedStage = Number(button.dataset.stage);
   progress.selectedStage = state.selectedStage;
   saveProgress();
   updateStagePicker();
-  resetLevel(state.selectedStage);
+  resetLevel(state.selectedStage, { preserveWind });
+  if (state.mode !== "playing") startGame();
 });
 
 soundToggle.checked = progress.sound;
