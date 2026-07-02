@@ -233,7 +233,7 @@ STAGES.push(
 
 function loadSave() {
   const fallback = {
-    unlocked: 1,
+    unlocked: STAGES.length,
     selectedStage: 0,
     bestScores: [0, 0, 0],
     sound: true,
@@ -244,7 +244,7 @@ function loadSave() {
     const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
     if (!saved || typeof saved !== "object") return fallback;
     return {
-      unlocked: clamp(Number(saved.unlocked) || 1, 1, STAGES.length),
+      unlocked: STAGES.length,
       selectedStage: clamp(Number(saved.selectedStage) || 0, 0, STAGES.length - 1),
       bestScores: Array.from({ length: STAGES.length }, (_, index) => Number(saved.bestScores?.[index]) || 0),
       sound: saved.sound !== false,
@@ -594,7 +594,7 @@ function updateStagePicker() {
   ensureStageButtons();
   for (const button of document.querySelectorAll("[data-stage]")) {
     const index = Number(button.dataset.stage);
-    button.disabled = index >= progress.unlocked;
+    button.disabled = false;
     button.classList.toggle("is-selected", index === state.selectedStage);
     const best = progress.bestScores[index];
     button.title = best ? `${STAGES[index].name} ベスト ${best}` : STAGES[index].name;
