@@ -11,6 +11,7 @@ const pauseButton = document.getElementById("pause-button");
 const stagePicker = document.getElementById("stage-picker");
 const soundToggle = document.getElementById("sound-toggle");
 const musicToggle = document.getElementById("music-toggle");
+let versionBadge = document.getElementById("version-badge");
 const stageNumberEl = document.getElementById("stage-number");
 const coinsEl = document.getElementById("coins");
 const windLevelEl = document.getElementById("wind-level");
@@ -37,6 +38,7 @@ const coinSprite = new Image();
 coinSprite.src = "./assets/wind-coin.png";
 const goalSprite = new Image();
 goalSprite.src = "./assets/goal-flag.png";
+const APP_VERSION = "v11";
 const stageBackgrounds = [
   "./assets/background-hills.png",
   "./assets/background-sunset.png",
@@ -386,6 +388,16 @@ function resizeCanvas() {
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.imageSmoothingEnabled = true;
+}
+
+function ensureVersionBadge() {
+  if (!versionBadge) {
+    versionBadge = document.createElement("div");
+    versionBadge.id = "version-badge";
+    versionBadge.className = "version-badge";
+    stageWrap.appendChild(versionBadge);
+  }
+  versionBadge.textContent = APP_VERSION;
 }
 
 function parseStage(index) {
@@ -1506,6 +1518,7 @@ if (!("roundRect" in CanvasRenderingContext2D.prototype)) {
   };
 }
 
+ensureVersionBadge();
 resizeCanvas();
 updateStagePicker();
 resetLevel(state.selectedStage);

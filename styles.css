@@ -111,6 +111,24 @@ canvas {
   min-width: 1.5ch;
 }
 
+.version-badge {
+  background: rgba(255, 255, 255, 0.88);
+  border: 2px solid rgba(16, 32, 51, 0.17);
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 rgba(16, 32, 51, 0.18);
+  color: rgba(16, 32, 51, 0.72);
+  font-size: 0.7rem;
+  font-weight: 900;
+  min-width: 48px;
+  padding: 4px 7px;
+  pointer-events: none;
+  position: absolute;
+  right: 58px;
+  text-align: center;
+  top: 10px;
+  z-index: 3;
+}
+
 .wind-hud {
   background: rgba(226, 248, 255, 0.94);
   border-color: rgba(45, 142, 177, 0.35);
@@ -356,6 +374,14 @@ canvas {
 
   .icon-button {
     right: 7px;
+    top: 7px;
+  }
+
+  .version-badge {
+    font-size: 0.62rem;
+    min-width: 42px;
+    padding: 3px 5px;
+    right: 52px;
     top: 7px;
   }
 
