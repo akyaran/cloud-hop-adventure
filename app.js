@@ -38,7 +38,7 @@ const coinSprite = new Image();
 coinSprite.src = "./assets/wind-coin.png";
 const goalSprite = new Image();
 goalSprite.src = "./assets/goal-flag.png";
-const APP_VERSION = "v12";
+const APP_VERSION = "v13";
 const stageBackgrounds = [
   "./assets/background-hills.png",
   "./assets/background-sunset.png",
@@ -1028,7 +1028,7 @@ function step(dt) {
 
 function drawBackground() {
   const stage = STAGES[state.stageIndex];
-  const background = stageBackgrounds[state.stageIndex];
+  const background = stageBackgrounds[state.stageIndex % stageBackgrounds.length];
   if (background.complete && background.naturalWidth > 0) {
     ctx.save();
     ctx.imageSmoothingEnabled = false;
